@@ -1,0 +1,19 @@
+{
+  "name": "wkace-building-lookup",
+  "version": "1.0.0",
+  "description": "전사 고객 테이블 건물 데이터 대량 조회·업데이트 서비스 (건물명(카카오), 주용도)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "jsdom": "^24.1.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

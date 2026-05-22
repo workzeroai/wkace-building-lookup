@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>건물 데이터 대량 조회·업데이트</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+    <div class="layout">
+
+        <!-- ── 사이드바 ── -->
+        <aside class="sidebar">
+            <div class="logo">🏢 건물 데이터<br>대량 업데이트</div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-label">사업부 빠른 설정</div>
+                <div class="dept-list">
+                    <button class="dept-btn" data-dept="기계설비">⚙️ 기계설비</button>
+                    <button class="dept-btn" data-dept="소방">🔥 소방</button>
+                    <button class="dept-btn" data-dept="위험물">⚠️ 위험물</button>
+                    <button class="dept-btn" data-dept="정보통신">📡 정보통신</button>
+                    <button class="dept-btn" data-dept="직무고시">📋 직무고시</button>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-label">진행 상황</div>
+                <div id="sidebar-stats">
+                    <div class="stat-row"><span>불러온 레코드</span><strong id="stat-loaded">-</strong></div>
+                    <div class="stat-row"><span>조회 완료</span><strong id="stat-done">-</strong></div>
+                    <div class="stat-row"><span>변경사항 있음</span><strong id="stat-changed">-</strong></div>
+                    <div class="stat-row"><span>오류</span><strong id="stat-error">-</strong></div>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-label">서버 상태</div>
+                <div id="health-display" class="health-unknown">확인 중...</div>
+            </div>
+        </aside>
+
+        <!-- ── 메인 콘텐츠 ── -->
+        <main class="main">
+
+            <!-- Step 1: 설정 -->
+            <section class="card" id="section-config">
+                <div class="card-header">
+                    <span class="step-badge">1</span>
+                    <h2>에어테이블 연결 설정</h2>
+                </div>
+                <div class="form-grid">
+                    <div class="field-group">
+                        <label>Base ID</label>
+                        <input type="text" id="cfg-base-id" placeholder="appXXXXXXXXXXXXXX" />
+                    </div>
+                    <div class="field-group">
+                        <label>Table ID / 테이블명</label>
+                        <input type="text" id="cfg-table-id" placeholder="tblXXXXXXXXXXXXXX 또는 테이블명" />
+                    </div>
+                    <div class="field-group">
+                        <label>고객명 필드명</label>
+                        <input type="text" id="cfg-field-name" value="고객명" />
+                    </div>
+                    <div class="field-group">
+                        <label>도로명 주소 필드명</label>
+                        <input type="text" id="cfg-field-address" value="도로명 주소" />
+                    </div>
+                    <div class="field-group">
+                        <label>건물명(카카오) 필드명</label>
+                        <input type="text" id="cfg-field-kakao" value="건물명(카카오)" />
+                    </div>
+                    <div class="field-group">
+                        <label>주용도 필드명</label>
+                        <input type="text" id="cfg-field-purpose" value="주용도" />
+                    </div>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-primary" id="btn-load">📥 레코드 불러오기</button>
+                </div>
+            </section>
+
+            <!-- Step 2: 불러온 레코드 미리보기 -->
+            <section class="card hidden" id="section-preview">
+                <div class="card-header">
+                    <span class="step-badge">2</span>
+                    <h2>레코드 미리보기 <span id="preview-count" class="badge"></span></h2>
+                </div>
+                <div id="preview-table-wrap" class="table-wrap">
+                    <table id="preview-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>고객명</th>
+                                <th>도로명 주소</th>
+                                <th>건물명(카카오) 현재값</th>
+                                <th>주용도 현재값</th>
+                            </tr>
+                        </thead>
+                        <tbody id="preview-tbody"></tbody>
+                    </table>
+                </div>
+                <div class="card-actions">
+                    <div class="delay-row">
+                        <label for="cfg-delay">요청 간격</label>
+                        <select id="cfg-delay">
+                            <option value="300">빠름 (0.3초)</option>
+                            <option value="500" selected>보통 (0.5초)</option>
+                            <option value="1000">안전 (1초)</option>
+                        </select>
+                        <span class="hint-text">레코드 수가 많으면 '안전' 권장</span>
+                    </div>
+                    <button class="btn-primary" id="btn-start-lookup">🔍 건축물 데이터 조회 시작</button>
+                </div>
+            </section>
+
+            <!-- Step 3: 진행 중 -->
+            <section class="card hidden" id="section-progress">
+                <div class="card-header">
+                    <span class="step-badge">3</span>
+                    <h2>조회 진행 중</h2>
+                </div>
+                <div class="progress-wrap">
+                    <div class="progress-bar-bg">
+                        <div id="progress-bar" class="progress-bar-fg" style="width:0%"></div>
+                    </div>
+                    <div id="progress-text" class="progress-text">0 / 0</div>
+                </div>
+                <div id="progress-log" class="progress-log"></div>
+            </section>
+
+            <!-- Step 4: 결과 검토 -->
+            <section class="card hidden" id="section-result">
+                <div class="card-header">
+                    <span class="step-badge">4</span>
+                    <h2>결과 검토 및 업데이트 적용</h2>
+                </div>
+
+                <div class="filter-row">
+                    <label>
+                        <input type="checkbox" id="filter-changed-only" checked />
+                        변경사항 있는 항목만 보기
+                    </label>
+                    <label>
+                        <input type="checkbox" id="filter-hide-errors" />
+                        오류 항목 숨기기
+                    </label>
+                    <span class="spacer"></span>
+                    <button class="btn-sm" id="btn-select-all">전체 선택</button>
+                    <button class="btn-sm" id="btn-deselect-all">전체 해제</button>
+                </div>
+
+                <div class="table-wrap" id="result-table-wrap">
+                    <table id="result-table">
+                        <thead>
+                            <tr>
+                                <th><input type="checkbox" id="chk-all" /></th>
+                                <th>#</th>
+                                <th>고객명</th>
+                                <th>건물명(카카오)</th>
+                                <th>주용도</th>
+                                <th>주용도(원본)</th>
+                                <th>상태</th>
+                            </tr>
+                        </thead>
+                        <tbody id="result-tbody"></tbody>
+                    </table>
+                </div>
+
+                <div class="card-actions">
+                    <button class="btn-primary" id="btn-apply">✅ 선택 항목 에어테이블 업데이트</button>
+                    <button class="btn-secondary" id="btn-download-csv">📄 CSV 다운로드</button>
+                </div>
+            </section>
+
+            <!-- Step 5: 완료 -->
+            <section class="card hidden" id="section-done">
+                <div class="card-header">
+                    <span class="step-badge done">✓</span>
+                    <h2>업데이트 완료</h2>
+                </div>
+                <div id="done-summary" class="done-summary"></div>
+                <div class="card-actions">
+                    <button class="btn-secondary" id="btn-restart">🔄 처음부터 다시</button>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <div id="toast" class="toast hidden"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>

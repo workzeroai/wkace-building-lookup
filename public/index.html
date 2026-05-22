@@ -3,193 +3,129 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>건물 데이터 대량 조회·업데이트</title>
+    <title>건물 데이터 대량 조회</title>
     <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-    <div class="layout">
 
-        <!-- ── 사이드바 ── -->
-        <aside class="sidebar">
-            <div class="logo">🏢 건물 데이터<br>대량 업데이트</div>
+<div class="page">
 
-            <div class="sidebar-section">
-                <div class="sidebar-label">사업부 빠른 설정</div>
-                <div class="dept-list">
-                    <button class="dept-btn" data-dept="기계설비">⚙️ 기계설비</button>
-                    <button class="dept-btn" data-dept="소방">🔥 소방</button>
-                    <button class="dept-btn" data-dept="위험물">⚠️ 위험물</button>
-                    <button class="dept-btn" data-dept="정보통신">📡 정보통신</button>
-                    <button class="dept-btn" data-dept="직무고시">📋 직무고시</button>
+    <!-- ── 헤더 ── -->
+    <header class="header">
+        <div class="header-left">
+            <span class="logo-icon">🏢</span>
+            <div>
+                <div class="logo-title">건물 데이터 대량 조회</div>
+                <div class="logo-sub">카카오 주소 + 건축물대장 기반 건물명·주용도 일괄 조회</div>
+            </div>
+        </div>
+        <div id="health-badge" class="health-badge">서버 확인 중…</div>
+    </header>
+
+    <!-- ── 입력 영역 ── -->
+    <section class="card" id="section-input">
+
+        <!-- 탭 -->
+        <div class="tab-bar">
+            <button class="tab active" data-tab="paste">📋 텍스트 붙여넣기</button>
+            <button class="tab" data-tab="file">📁 파일 업로드</button>
+        </div>
+
+        <!-- 붙여넣기 탭 -->
+        <div class="tab-panel" id="tab-paste">
+            <label class="field-label">도로명주소 또는 지번주소를 한 줄에 하나씩 입력하세요</label>
+            <textarea id="input-textarea" placeholder="경기 성남시 분당구 판교역로 235&#10;서울 강남구 테헤란로 152&#10;경기 수원시 영통구 광교중앙로 145&#10;..."></textarea>
+            <div class="input-meta">
+                <span id="paste-count" class="count-badge">0개</span>
+                <button class="btn-sm" id="btn-clear-paste">지우기</button>
+            </div>
+        </div>
+
+        <!-- 파일 업로드 탭 -->
+        <div class="tab-panel hidden" id="tab-file">
+            <label class="field-label">CSV 또는 Excel 파일 — 첫 번째 열에 주소가 있어야 합니다</label>
+            <div class="file-drop-zone" id="file-drop-zone">
+                <input type="file" id="file-input" accept=".csv,.xlsx,.xls,.xlsm" />
+                <div class="file-drop-inner">
+                    <div class="file-icon">📄</div>
+                    <div class="file-drop-text">파일을 드래그하거나 클릭해서 선택</div>
+                    <div class="file-drop-hint">CSV, xlsx, xls 지원 · 최대 10MB</div>
                 </div>
             </div>
+            <div id="file-status" class="file-status hidden"></div>
+        </div>
 
-            <div class="sidebar-section">
-                <div class="sidebar-label">진행 상황</div>
-                <div id="sidebar-stats">
-                    <div class="stat-row"><span>불러온 레코드</span><strong id="stat-loaded">-</strong></div>
-                    <div class="stat-row"><span>조회 완료</span><strong id="stat-done">-</strong></div>
-                    <div class="stat-row"><span>변경사항 있음</span><strong id="stat-changed">-</strong></div>
-                    <div class="stat-row"><span>오류</span><strong id="stat-error">-</strong></div>
-                </div>
+        <!-- 옵션 + 실행 버튼 -->
+        <div class="action-row">
+            <div class="option-group">
+                <label class="option-label">요청 간격</label>
+                <select id="cfg-delay">
+                    <option value="300">빠름 (0.3초)</option>
+                    <option value="500" selected>보통 (0.5초)</option>
+                    <option value="1000">안전 (1초)</option>
+                </select>
             </div>
+            <button class="btn-primary" id="btn-run">🔍 조회 시작</button>
+        </div>
+    </section>
 
-            <div class="sidebar-section">
-                <div class="sidebar-label">서버 상태</div>
-                <div id="health-display" class="health-unknown">확인 중...</div>
+    <!-- ── 진행 영역 ── -->
+    <section class="card hidden" id="section-progress">
+        <div class="progress-header">
+            <span class="progress-label">조회 중…</span>
+            <span id="progress-text" class="progress-count">0 / 0</span>
+        </div>
+        <div class="progress-track">
+            <div id="progress-bar" class="progress-fill" style="width:0%"></div>
+        </div>
+        <div id="progress-log" class="progress-log"></div>
+    </section>
+
+    <!-- ── 결과 영역 ── -->
+    <section class="card hidden" id="section-result">
+        <div class="result-header">
+            <div class="result-title">
+                조회 결과
+                <span id="result-summary" class="result-summary"></span>
             </div>
-        </aside>
+            <div class="result-actions">
+                <button class="btn-sm" id="btn-copy-table" title="전체 테이블 복사 (탭 구분)">📋 전체 복사</button>
+                <button class="btn-sm" id="btn-download-csv">⬇️ CSV 다운로드</button>
+                <button class="btn-sm btn-outline" id="btn-reset">↩ 처음부터</button>
+            </div>
+        </div>
 
-        <!-- ── 메인 콘텐츠 ── -->
-        <main class="main">
+        <!-- 필터 -->
+        <div class="filter-row">
+            <label class="filter-chk">
+                <input type="checkbox" id="filter-errors-only" /> 오류만 보기
+            </label>
+            <span class="filter-sep">|</span>
+            <input type="text" id="filter-search" class="filter-search" placeholder="주소 검색…" />
+        </div>
 
-            <!-- Step 1: 설정 -->
-            <section class="card" id="section-config">
-                <div class="card-header">
-                    <span class="step-badge">1</span>
-                    <h2>에어테이블 연결 설정</h2>
-                </div>
-                <div class="form-grid">
-                    <div class="field-group">
-                        <label>Base ID</label>
-                        <input type="text" id="cfg-base-id" placeholder="appXXXXXXXXXXXXXX" />
-                    </div>
-                    <div class="field-group">
-                        <label>Table ID / 테이블명</label>
-                        <input type="text" id="cfg-table-id" placeholder="tblXXXXXXXXXXXXXX 또는 테이블명" />
-                    </div>
-                    <div class="field-group">
-                        <label>고객명 필드명</label>
-                        <input type="text" id="cfg-field-name" value="고객명" />
-                    </div>
-                    <div class="field-group">
-                        <label>도로명 주소 필드명</label>
-                        <input type="text" id="cfg-field-address" value="도로명 주소" />
-                    </div>
-                    <div class="field-group">
-                        <label>건물명(카카오) 필드명</label>
-                        <input type="text" id="cfg-field-kakao" value="건물명(카카오)" />
-                    </div>
-                    <div class="field-group">
-                        <label>주용도 필드명</label>
-                        <input type="text" id="cfg-field-purpose" value="주용도" />
-                    </div>
-                </div>
-                <div class="card-actions">
-                    <button class="btn-primary" id="btn-load">📥 레코드 불러오기</button>
-                </div>
-            </section>
+        <div class="table-wrap">
+            <table id="result-table">
+                <thead>
+                    <tr>
+                        <th class="th-num">#</th>
+                        <th>입력 주소</th>
+                        <th>표준 도로명주소</th>
+                        <th>건물명(카카오)</th>
+                        <th>주용도 원본</th>
+                        <th>주용도</th>
+                        <th class="th-status">상태</th>
+                    </tr>
+                </thead>
+                <tbody id="result-tbody"></tbody>
+            </table>
+        </div>
+    </section>
 
-            <!-- Step 2: 불러온 레코드 미리보기 -->
-            <section class="card hidden" id="section-preview">
-                <div class="card-header">
-                    <span class="step-badge">2</span>
-                    <h2>레코드 미리보기 <span id="preview-count" class="badge"></span></h2>
-                </div>
-                <div id="preview-table-wrap" class="table-wrap">
-                    <table id="preview-table">
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>고객명</th>
-                                <th>도로명 주소</th>
-                                <th>건물명(카카오) 현재값</th>
-                                <th>주용도 현재값</th>
-                            </tr>
-                        </thead>
-                        <tbody id="preview-tbody"></tbody>
-                    </table>
-                </div>
-                <div class="card-actions">
-                    <div class="delay-row">
-                        <label for="cfg-delay">요청 간격</label>
-                        <select id="cfg-delay">
-                            <option value="300">빠름 (0.3초)</option>
-                            <option value="500" selected>보통 (0.5초)</option>
-                            <option value="1000">안전 (1초)</option>
-                        </select>
-                        <span class="hint-text">레코드 수가 많으면 '안전' 권장</span>
-                    </div>
-                    <button class="btn-primary" id="btn-start-lookup">🔍 건축물 데이터 조회 시작</button>
-                </div>
-            </section>
+</div>
 
-            <!-- Step 3: 진행 중 -->
-            <section class="card hidden" id="section-progress">
-                <div class="card-header">
-                    <span class="step-badge">3</span>
-                    <h2>조회 진행 중</h2>
-                </div>
-                <div class="progress-wrap">
-                    <div class="progress-bar-bg">
-                        <div id="progress-bar" class="progress-bar-fg" style="width:0%"></div>
-                    </div>
-                    <div id="progress-text" class="progress-text">0 / 0</div>
-                </div>
-                <div id="progress-log" class="progress-log"></div>
-            </section>
+<div id="toast" class="toast hidden"></div>
 
-            <!-- Step 4: 결과 검토 -->
-            <section class="card hidden" id="section-result">
-                <div class="card-header">
-                    <span class="step-badge">4</span>
-                    <h2>결과 검토 및 업데이트 적용</h2>
-                </div>
-
-                <div class="filter-row">
-                    <label>
-                        <input type="checkbox" id="filter-changed-only" checked />
-                        변경사항 있는 항목만 보기
-                    </label>
-                    <label>
-                        <input type="checkbox" id="filter-hide-errors" />
-                        오류 항목 숨기기
-                    </label>
-                    <span class="spacer"></span>
-                    <button class="btn-sm" id="btn-select-all">전체 선택</button>
-                    <button class="btn-sm" id="btn-deselect-all">전체 해제</button>
-                </div>
-
-                <div class="table-wrap" id="result-table-wrap">
-                    <table id="result-table">
-                        <thead>
-                            <tr>
-                                <th><input type="checkbox" id="chk-all" /></th>
-                                <th>#</th>
-                                <th>고객명</th>
-                                <th>건물명(카카오)</th>
-                                <th>주용도</th>
-                                <th>주용도(원본)</th>
-                                <th>상태</th>
-                            </tr>
-                        </thead>
-                        <tbody id="result-tbody"></tbody>
-                    </table>
-                </div>
-
-                <div class="card-actions">
-                    <button class="btn-primary" id="btn-apply">✅ 선택 항목 에어테이블 업데이트</button>
-                    <button class="btn-secondary" id="btn-download-csv">📄 CSV 다운로드</button>
-                </div>
-            </section>
-
-            <!-- Step 5: 완료 -->
-            <section class="card hidden" id="section-done">
-                <div class="card-header">
-                    <span class="step-badge done">✓</span>
-                    <h2>업데이트 완료</h2>
-                </div>
-                <div id="done-summary" class="done-summary"></div>
-                <div class="card-actions">
-                    <button class="btn-secondary" id="btn-restart">🔄 처음부터 다시</button>
-                </div>
-            </section>
-
-        </main>
-    </div>
-
-    <div id="toast" class="toast hidden"></div>
-
-    <script src="app.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
